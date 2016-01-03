@@ -4,5 +4,6 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="weka/lib/java-cup.jar"/>
 	<classpathentry kind="lib" path="weka/lib/packageManager.jar"/>
+	<classpathentry kind="con" path="org.eclipse.pde.core.requiredPlugins"/>
 	<classpathentry kind="output" path="weka/build/classes"/>
 </classpath>

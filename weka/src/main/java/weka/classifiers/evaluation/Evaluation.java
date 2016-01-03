@@ -3086,6 +3086,11 @@ public class Evaluation implements Summarizable, RevisionHandler, Serializable {
     return toClassDetailsString("=== Detailed Accuracy By Class ===\n");
   }
 
+  //returns true if the list m_PluginMetrics is not null and contains at least one element
+  private Boolean existsPluginMetrics() {
+	  return (m_pluginMetrics != null && m_pluginMetrics.size() >0);
+  }
+  
   /**
    * Generates a breakdown of the accuracy for each class, incorporating various
    * information-retrieval statistics, such as true/false positive rate,
@@ -3118,7 +3123,7 @@ public class Evaluation implements Summarizable, RevisionHandler, Serializable {
         + (displayFM ? "F-Measure  " : "") + (displayMCC ? "MCC      " : "")
         + (displayROC ? "ROC Area  " : "") + (displayPRC ? "PRC Area  " : ""));
 
-    if (m_pluginMetrics != null && m_pluginMetrics.size() > 0) {
+    if (existsPluginMetrics()) {
       for (AbstractEvaluationMetric m : m_pluginMetrics) {
         if (m instanceof InformationRetrievalEvaluationMetric
           && m.appliesToNominalClass()) {
@@ -3183,7 +3188,7 @@ public class Evaluation implements Summarizable, RevisionHandler, Serializable {
         }
       }
 
-      if (m_pluginMetrics != null && m_pluginMetrics.size() > 0) {
+      if (existsPluginMetrics()) {
         for (AbstractEvaluationMetric m : m_pluginMetrics) {
           if (m instanceof InformationRetrievalEvaluationMetric
             && m.appliesToNominalClass()) {
@@ -3241,7 +3246,7 @@ public class Evaluation implements Summarizable, RevisionHandler, Serializable {
       text.append(String.format("%-10.3f", weightedAreaUnderPRC()));
     }
 
-    if (m_pluginMetrics != null && m_pluginMetrics.size() > 0) {
+    if (existsPluginMetrics()) {
       for (AbstractEvaluationMetric m : m_pluginMetrics) {
         if (m instanceof InformationRetrievalEvaluationMetric
           && m.appliesToNominalClass()) {
