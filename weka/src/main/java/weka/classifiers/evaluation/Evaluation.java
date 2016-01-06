@@ -1832,8 +1832,7 @@ public class Evaluation implements Summarizable, RevisionHandler, Serializable {
    * @return the predictions
    * @throws Exception if model could not be evaluated successfully
    */
-  public double[] evaluateModel(Classifier classifier, Instances data,
-    Object... forPredictionsPrinting) throws Exception {
+  public double[] evaluateModel(Classifier classifier, Instances data, Object... forPredictionsPrinting) throws Exception {
     // for predictions printing
     AbstractOutput classificationOutput = null;
 
@@ -2742,8 +2741,7 @@ public class Evaluation implements Summarizable, RevisionHandler, Serializable {
    *          returned as well
    * @return the summary as a String
    */
-  public String
-    toSummaryString(String title, boolean printComplexityStatistics) {
+  public String toSummaryString(String title, boolean printComplexityStatistics) {
 
     StringBuffer text = new StringBuffer();
 
@@ -2808,7 +2806,7 @@ public class Evaluation implements Summarizable, RevisionHandler, Serializable {
             }
           }
 
-          if (m_pluginMetrics != null) {
+          if (existsPluginMetrics(m_pluginMetrics)) {
             for (AbstractEvaluationMetric m : m_pluginMetrics) {
               if (m instanceof StandardEvaluationMetric
                 && m.appliesToNominalClass() && !m.appliesToNumericClass()) {
@@ -2835,7 +2833,7 @@ public class Evaluation implements Summarizable, RevisionHandler, Serializable {
               + "\n");
           }
 
-          if (m_pluginMetrics != null) {
+          if (existsPluginMetrics(m_pluginMetrics)) {
             for (AbstractEvaluationMetric m : m_pluginMetrics) {
               if (m instanceof StandardEvaluationMetric
                 && !m.appliesToNominalClass() && m.appliesToNumericClass()) {
@@ -2933,7 +2931,7 @@ public class Evaluation implements Summarizable, RevisionHandler, Serializable {
               + " %\n");
           }
         }
-        if (m_pluginMetrics != null) {
+        if (existsPluginMetrics(m_pluginMetrics)) {
           for (AbstractEvaluationMetric m : m_pluginMetrics) {
             if (m instanceof StandardEvaluationMetric
               && m.appliesToNominalClass() && m.appliesToNumericClass()) {
@@ -3087,8 +3085,8 @@ public class Evaluation implements Summarizable, RevisionHandler, Serializable {
   }
 
   //returns true if the list m_PluginMetrics is not null and contains at least one element
-  private Boolean existsPluginMetrics() {
-	  return (m_pluginMetrics != null && m_pluginMetrics.size() >0);
+  private Boolean existsPluginMetrics(List<AbstractEvaluationMetric> metrics) {
+	  return (metrics != null && metrics.size() >0);
   }
   
   /**
@@ -3123,7 +3121,7 @@ public class Evaluation implements Summarizable, RevisionHandler, Serializable {
         + (displayFM ? "F-Measure  " : "") + (displayMCC ? "MCC      " : "")
         + (displayROC ? "ROC Area  " : "") + (displayPRC ? "PRC Area  " : ""));
 
-    if (existsPluginMetrics()) {
+    if (existsPluginMetrics(m_pluginMetrics)) {
       for (AbstractEvaluationMetric m : m_pluginMetrics) {
         if (m instanceof InformationRetrievalEvaluationMetric
           && m.appliesToNominalClass()) {
@@ -3188,7 +3186,7 @@ public class Evaluation implements Summarizable, RevisionHandler, Serializable {
         }
       }
 
-      if (existsPluginMetrics()) {
+      if (existsPluginMetrics(m_pluginMetrics)) {
         for (AbstractEvaluationMetric m : m_pluginMetrics) {
           if (m instanceof InformationRetrievalEvaluationMetric
             && m.appliesToNominalClass()) {
@@ -3246,7 +3244,7 @@ public class Evaluation implements Summarizable, RevisionHandler, Serializable {
       text.append(String.format("%-10.3f", weightedAreaUnderPRC()));
     }
 
-    if (existsPluginMetrics()) {
+    if (existsPluginMetrics(m_pluginMetrics)) {
       for (AbstractEvaluationMetric m : m_pluginMetrics) {
         if (m instanceof InformationRetrievalEvaluationMetric
           && m.appliesToNominalClass()) {
@@ -3293,15 +3291,8 @@ public class Evaluation implements Summarizable, RevisionHandler, Serializable {
    * @return the true positive rate
    */
   public double numTruePositives(int classIndex) {
-
-    double correct = 0;
-    for (int j = 0; j < m_NumClasses; j++) {
-      if (j == classIndex) {
-        correct += m_ConfusionMatrix[classIndex][j];
-      }
-    }
-    return correct;
-  }
+	return (classIndex >= 0 && classIndex < m_NumClasses) ? m_ConfusionMatrix[classIndex][classIndex] : 0;
+}
 
   /**
    * Calculate the true positive rate with respect to a particular class. This
@@ -3319,17 +3310,14 @@ public class Evaluation implements Summarizable, RevisionHandler, Serializable {
    */
   public double truePositiveRate(int classIndex) {
 
-    double correct = 0, total = 0;
+    double total = 0;
     for (int j = 0; j < m_NumClasses; j++) {
-      if (j == classIndex) {
-        correct += m_ConfusionMatrix[classIndex][j];
-      }
       total += m_ConfusionMatrix[classIndex][j];
     }
     if (total == 0) {
       return 0;
     }
-    return correct / total;
+    return m_ConfusionMatrix[classIndex][classIndex] / total;
   }
 
   /**
@@ -3366,8 +3354,8 @@ public class Evaluation implements Summarizable, RevisionHandler, Serializable {
    * correctly classified negatives
    * </pre>
    * 
-   * @param classIndex the index of the class to consider as "positive"
-   * @return the true positive rate
+   * @param classIndex the index of the class to consider as "negative"
+   * @return the true negative rate
    */
   public double numTrueNegatives(int classIndex) {
 
@@ -3395,8 +3383,8 @@ public class Evaluation implements Summarizable, RevisionHandler, Serializable {
    *       total negatives
    * </pre>
    * 
-   * @param classIndex the index of the class to consider as "positive"
-   * @return the true positive rate
+   * @param classIndex the index of the class to consider as "negative"
+   * @return the true negative rate
    */
   public double trueNegativeRate(int classIndex) {
 
@@ -3459,11 +3447,7 @@ public class Evaluation implements Summarizable, RevisionHandler, Serializable {
     double incorrect = 0;
     for (int i = 0; i < m_NumClasses; i++) {
       if (i != classIndex) {
-        for (int j = 0; j < m_NumClasses; j++) {
-          if (j == classIndex) {
-            incorrect += m_ConfusionMatrix[i][j];
-          }
-        }
+        incorrect += m_ConfusionMatrix[i][classIndex];
       }
     }
     return incorrect;
@@ -3489,11 +3473,9 @@ public class Evaluation implements Summarizable, RevisionHandler, Serializable {
     for (int i = 0; i < m_NumClasses; i++) {
       if (i != classIndex) {
         for (int j = 0; j < m_NumClasses; j++) {
-          if (j == classIndex) {
-            incorrect += m_ConfusionMatrix[i][j];
-          }
           total += m_ConfusionMatrix[i][j];
         }
+        incorrect += m_ConfusionMatrix[i][classIndex];
       }
     }
     if (total == 0) {
@@ -3542,13 +3524,9 @@ public class Evaluation implements Summarizable, RevisionHandler, Serializable {
   public double numFalseNegatives(int classIndex) {
 
     double incorrect = 0;
-    for (int i = 0; i < m_NumClasses; i++) {
-      if (i == classIndex) {
-        for (int j = 0; j < m_NumClasses; j++) {
-          if (j != classIndex) {
-            incorrect += m_ConfusionMatrix[i][j];
-          }
-        }
+    for (int j = 0; j < m_NumClasses; j++) {
+      if (j != classIndex) {
+        incorrect += m_ConfusionMatrix[classIndex][j];
       }
     }
     return incorrect;
@@ -3571,15 +3549,11 @@ public class Evaluation implements Summarizable, RevisionHandler, Serializable {
   public double falseNegativeRate(int classIndex) {
 
     double incorrect = 0, total = 0;
-    for (int i = 0; i < m_NumClasses; i++) {
-      if (i == classIndex) {
-        for (int j = 0; j < m_NumClasses; j++) {
-          if (j != classIndex) {
-            incorrect += m_ConfusionMatrix[i][j];
-          }
-          total += m_ConfusionMatrix[i][j];
-        }
+    for (int j = 0; j < m_NumClasses; j++) {
+      if (j != classIndex) {
+        incorrect += m_ConfusionMatrix[classIndex][j];
       }
+      total += m_ConfusionMatrix[classIndex][j];
     }
     if (total == 0) {
       return 0;
@@ -3709,17 +3683,14 @@ public class Evaluation implements Summarizable, RevisionHandler, Serializable {
    */
   public double precision(int classIndex) {
 
-    double correct = 0, total = 0;
+    double total = 0;
     for (int i = 0; i < m_NumClasses; i++) {
-      if (i == classIndex) {
-        correct += m_ConfusionMatrix[i][classIndex];
-      }
       total += m_ConfusionMatrix[i][classIndex];
     }
     if (total == 0) {
       return 0;
     }
-    return correct / total;
+    return m_ConfusionMatrix[classIndex][classIndex] / total;
   }
 
   /**
