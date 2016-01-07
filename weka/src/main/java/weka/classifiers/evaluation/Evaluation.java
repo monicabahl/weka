@@ -41,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.zip.GZIPInputStream;
@@ -2731,6 +2732,60 @@ public class Evaluation implements Summarizable, RevisionHandler, Serializable {
   }
 
   /**
+   * 
+   * @param pluginMetrics the List of metrics, for which the summary string is returned
+   * @param forNominalClass true if for a nominal class
+   * @param forNumericClass true if for numeric class
+   * @param forStatisticsNames true if for statisticsNames
+   * @return the summary string
+   */
+	private String getMetricsSummaryString(List<AbstractEvaluationMetric> pluginMetrics, boolean forNominalClass, boolean forNumericClass, boolean forStatisticsNames) {
+	
+		StringBuffer str = new StringBuffer();
+		if (pluginMetrics == null)
+			return "";
+		
+		for (AbstractEvaluationMetric m : m_pluginMetrics) {
+			if (m instanceof StandardEvaluationMetric && m.appliesToNominalClass() == forNominalClass && m.appliesToNumericClass() == forNumericClass) {
+				String metricName = m.getMetricName().toLowerCase();
+				boolean display = m_metricsToDisplay.contains(metricName);
+				// For the GUI and the command line StandardEvaluationMetrics
+				// are an "all or nothing" jobby (because we need the user to
+				// supply how they should be displayed and formated via the
+				// toSummaryString() method
+				if (forStatisticsNames && display) {
+					HashSet<String> tmpNames = new HashSet<String>(m_metricsToDisplay);
+					tmpNames.retainAll(m.getStatisticNames());
+					display = tmpNames.equals(m.getStatisticNames());
+				}
+				if (display) {
+					str.append(((StandardEvaluationMetric) m).toSummaryString());
+				}
+			}
+		}
+		return str.toString();
+	}
+
+	
+/**	
+    if (m instanceof StandardEvaluationMetric
+            && !m.appliesToNominalClass() && m.appliesToNumericClass()) {
+            String metricName = m.getMetricName().toLowerCase();
+            boolean display = m_metricsToDisplay.contains(metricName);
+            List<String> statNames = m.getStatisticNames();
+            for (String s : statNames) {
+              display =
+                (display && m_metricsToDisplay.contains(s.toLowerCase()));
+            }
+            if (display) {
+              String formattedS =
+                ((StandardEvaluationMetric) m).toSummaryString();
+              text.append(formattedS);
+            }
+          }
+**/
+	
+  /**
    * Outputs the performance statistics in summary form. Lists number (and
    * percentage) of instances classified correctly, incorrectly and
    * unclassified. Outputs the total number of instances classified, and the
@@ -2806,24 +2861,7 @@ public class Evaluation implements Summarizable, RevisionHandler, Serializable {
             }
           }
 
-          if (existsPluginMetrics(m_pluginMetrics)) {
-            for (AbstractEvaluationMetric m : m_pluginMetrics) {
-              if (m instanceof StandardEvaluationMetric
-                && m.appliesToNominalClass() && !m.appliesToNumericClass()) {
-                String metricName = m.getMetricName().toLowerCase();
-                boolean display = m_metricsToDisplay.contains(metricName);
-                // For the GUI and the command line StandardEvaluationMetrics
-                // are an "all or nothing" jobby (because we need the user to
-                // supply how they should be displayed and formated via the
-                // toSummaryString() method
-                if (display) {
-                  String formattedS =
-                    ((StandardEvaluationMetric) m).toSummaryString();
-                  text.append(formattedS);
-                }
-              }
-            }
-          }
+          text.append(getMetricsSummaryString(m_pluginMetrics, true, false, false));
         } else {
           boolean displayCorrelation =
             m_metricsToDisplay.contains("correlation");
@@ -2833,25 +2871,7 @@ public class Evaluation implements Summarizable, RevisionHandler, Serializable {
               + "\n");
           }
 
-          if (existsPluginMetrics(m_pluginMetrics)) {
-            for (AbstractEvaluationMetric m : m_pluginMetrics) {
-              if (m instanceof StandardEvaluationMetric
-                && !m.appliesToNominalClass() && m.appliesToNumericClass()) {
-                String metricName = m.getMetricName().toLowerCase();
-                boolean display = m_metricsToDisplay.contains(metricName);
-                List<String> statNames = m.getStatisticNames();
-                for (String s : statNames) {
-                  display =
-                    (display && m_metricsToDisplay.contains(s.toLowerCase()));
-                }
-                if (display) {
-                  String formattedS =
-                    ((StandardEvaluationMetric) m).toSummaryString();
-                  text.append(formattedS);
-                }
-              }
-            }
-          }
+       	  text.append(getMetricsSummaryString(m_pluginMetrics, false, true, true));
         }
         if (printComplexityStatistics && m_ComplexityStatisticsAvailable) {
           boolean displayComplexityOrder0 =
@@ -2883,26 +2903,7 @@ public class Evaluation implements Summarizable, RevisionHandler, Serializable {
         }
 
         if (printComplexityStatistics && m_pluginMetrics != null) {
-          for (AbstractEvaluationMetric m : m_pluginMetrics) {
-            if (m instanceof InformationTheoreticEvaluationMetric) {
-              if ((m_ClassIsNominal && m.appliesToNominalClass())
-                || (!m_ClassIsNominal && m.appliesToNumericClass())) {
-                String metricName = m.getMetricName().toLowerCase();
-                boolean display = m_metricsToDisplay.contains(metricName);
-                List<String> statNames = m.getStatisticNames();
-                for (String s : statNames) {
-                  display =
-                    (display && m_metricsToDisplay.contains(s.toLowerCase()));
-                }
-                if (display) {
-                  String formattedS =
-                    ((InformationTheoreticEvaluationMetric) m)
-                      .toSummaryString();
-                  text.append(formattedS);
-                }
-              }
-            }
-          }
+         	  text.append(getMetricsSummaryString(m_pluginMetrics, true, false, true));
         }
 
         boolean displayMAE = m_metricsToDisplay.contains("mae");
@@ -2932,23 +2933,8 @@ public class Evaluation implements Summarizable, RevisionHandler, Serializable {
           }
         }
         if (existsPluginMetrics(m_pluginMetrics)) {
-          for (AbstractEvaluationMetric m : m_pluginMetrics) {
-            if (m instanceof StandardEvaluationMetric
-              && m.appliesToNominalClass() && m.appliesToNumericClass()) {
-              String metricName = m.getMetricName().toLowerCase();
-              boolean display = m_metricsToDisplay.contains(metricName);
-              List<String> statNames = m.getStatisticNames();
-              for (String s : statNames) {
-                display =
-                  (display && m_metricsToDisplay.contains(s.toLowerCase()));
-              }
-              if (display) {
-                String formattedS =
-                  ((StandardEvaluationMetric) m).toSummaryString();
-                text.append(formattedS);
-              }
-            }
-          }
+       	  text.append(getMetricsSummaryString(m_pluginMetrics, true, true, true));
+        	
         }
 
         if (m_CoverageStatisticsAvailable) {
